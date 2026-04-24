@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test:
+    name: Test
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: .build/checkouts
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: ${{ runner.os }}-spm-
+
+      - name: Test
+        run: swift test
+
+  release:
+    name: Build & Release
+    needs: test
+    runs-on: macos-15
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: .build/checkouts
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: ${{ runner.os }}-spm-
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Build arm64
+        run: swift build -c release --arch arm64
+
+      - name: Build x86_64
+        run: swift build -c release --arch x86_64
+
+      - name: Create universal binary
+        run: |
+          lipo -create \
+            .build/arm64-apple-macosx/release/SwiftKHD \
+            .build/x86_64-apple-macosx/release/SwiftKHD \
+            -output swiftkHD
+          lipo -info swiftkHD
+
+      - name: Build installer pkg
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+
+          # Stage binary at its install path
+          mkdir -p payload/usr/local/bin
+          cp swiftkHD payload/usr/local/bin/swiftkHD
+          chmod +x payload/usr/local/bin/swiftkHD
+
+          # Build component pkg
+          pkgbuild \
+            --root payload \
+            --identifier com.netjibbing.SwiftKHD \
+            --version "${VERSION#v}" \
+            --install-location / \
+            "SwiftKHD-${VERSION}.pkg"
+
+      - name: Compress pkg
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          zip "SwiftKHD-${VERSION}.pkg.zip" "SwiftKHD-${VERSION}.pkg"
+
+      - name: Compute SHA256 checksums
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          shasum -a 256 \
+            "SwiftKHD-${VERSION}.pkg" \
+            "SwiftKHD-${VERSION}.pkg.zip" \
+            > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SwiftKHD ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: |
+            SwiftKHD-${{ steps.version.outputs.version }}.pkg
+            SwiftKHD-${{ steps.version.outputs.version }}.pkg.zip
+            SHA256SUMS.txt
