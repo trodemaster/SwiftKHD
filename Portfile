@@ -1,0 +1,84 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+
+name                SwiftKHD
+version             0.1.0
+categories          sysutils
+platforms           {darwin >= 22}
+maintainers         {blake@netjibbing.com}
+license             MIT
+
+description         Simple Hotkey Daemon for macOS (Swift port of skhd)
+long_description    SwiftKHD is a Swift port of skhd, a simple hotkey daemon for macOS. \
+                    It uses the same configuration file format as skhd and supports the \
+                    same features including modal hotkeys, process-specific bindings, \
+                    key forwarding, and media key support. Service management uses the \
+                    native SMAppService API (macOS 13+).
+
+homepage            https://github.com/blakegarner/SwiftKHD
+
+fetch.type          git
+git.url             https://github.com/blakegarner/SwiftKHD
+git.branch          main
+
+use_configure       no
+
+# Require Xcode for swift toolchain
+depends_build       port:swift
+
+build.cmd           swift build
+build.args          --configuration release --arch arm64 --arch x86_64
+build.dir           ${worksrcpath}
+
+destroot {
+    set app_dir ${destroot}/Applications/SwiftKHD.app/Contents
+
+    # Create app bundle structure
+    xinstall -d ${app_dir}/MacOS
+    xinstall -d ${app_dir}/Library/LaunchAgents
+    xinstall -d ${app_dir}/Resources
+
+    # Binary
+    xinstall -m 755 \
+        ${build.dir}/.build/apple/Products/Release/SwiftKHD \
+        ${app_dir}/MacOS/SwiftKHD
+
+    # LaunchAgent plist (required by SMAppService)
+    xinstall -m 644 \
+        ${worksrcpath}/Resources/LaunchAgents/com.netjibbing.SwiftKHD.plist \
+        ${app_dir}/Library/LaunchAgents/com.netjibbing.SwiftKHD.plist
+
+    # Info.plist
+    xinstall -m 644 \
+        ${worksrcpath}/Resources/Info.plist \
+        ${app_dir}/Info.plist
+
+    # Ad-hoc code signing (required for SMAppService and accessibility persistence)
+    system "codesign --force --sign - \
+        --entitlements ${worksrcpath}/Resources/SwiftKHD.entitlements \
+        ${destroot}/Applications/SwiftKHD.app"
+
+    # CLI symlink in /opt/local/bin
+    xinstall -d ${destroot}${prefix}/bin
+    ln -sf /Applications/SwiftKHD.app/Contents/MacOS/SwiftKHD \
+        ${destroot}${prefix}/bin/swiftkHD
+}
+
+notes "
+To get started:
+
+1. Install the launchd service:
+   swiftkHD --install-service
+
+2. Grant accessibility permissions:
+   System Settings → Privacy & Security → Accessibility → add SwiftKHD
+
+3. Create your config at ~/.config/skhd/skhdrc (same format as skhd)
+
+To reload config while running:
+   swiftkHD --reload
+
+To check service status:
+   swiftkHD --status
+"
