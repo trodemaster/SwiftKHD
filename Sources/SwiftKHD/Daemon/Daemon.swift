@@ -74,7 +74,7 @@ public final class Daemon {
             self?.handleEvent(proxy: proxy, type: type, event: event) ?? event
         }
 
-        fputs("swiftkHD: event tap created. Running.\n", stdout)
+        fputs("swiftkhd: event tap created. Running.\n", stdout)
         CFRunLoopRun()
         tracer.printSummary()
     }
@@ -189,7 +189,7 @@ public final class Daemon {
                     forkAndExec(shell: mappings.shell, command: modeCmd, verbose: verbose)
                 }
             } else {
-                fputs("swiftkHD: mode '\(modeName)' not found, resetting to default\n", stderr)
+                fputs("swiftkhd: mode '\(modeName)' not found, resetting to default\n", stderr)
                 currentModeName = "default"
             }
             return .consumed
@@ -244,9 +244,9 @@ public final class Daemon {
             if mappings.modeMap["default"] != nil {
                 currentModeName = "default"
             }
-            fputs("swiftkHD: configuration reloaded.\n", stdout)
+            fputs("swiftkhd: configuration reloaded.\n", stdout)
         } catch {
-            fputs("swiftkHD: reload failed: \(error)\n", stderr)
+            fputs("swiftkhd: reload failed: \(error)\n", stderr)
         }
     }
 

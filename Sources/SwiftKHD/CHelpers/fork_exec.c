@@ -8,7 +8,7 @@
 void skhd_fork_and_exec(const char *shell, const char *command, int verbose) {
     pid_t pid1 = fork();
     if (pid1 < 0) {
-        perror("swiftkHD: fork");
+        perror("swiftkhd: fork");
         return;
     }
 

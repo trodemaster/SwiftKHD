@@ -3,7 +3,7 @@ import Foundation
 
 struct SwiftKHD: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "swiftkHD",
+        commandName: "swiftkhd",
         abstract: "Simple Hotkey Daemon for macOS (Swift port of skhd)",
         version: "0.1.0"
     )
@@ -82,7 +82,7 @@ struct SwiftKHD: ParsableCommand {
         // Check accessibility
         if !ServiceManager.hasAccessibilityPermissions() {
             fputs("""
-            swiftkHD: Accessibility permissions required.
+            swiftkhd: Accessibility permissions required.
             Open System Settings → Privacy & Security → Accessibility and add this binary.
             \n
             """, stderr)

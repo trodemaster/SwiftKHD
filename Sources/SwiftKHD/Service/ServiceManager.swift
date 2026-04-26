@@ -3,7 +3,7 @@ import Foundation
 import Darwin
 
 public enum ServiceManager {
-    private static let label    = "com.netjibbing.SwiftKHD"
+    private static let label    = "com.netjibbing.swiftkhd"
     private static let plistName = "\(label).plist"
 
     private static let launchAgentsDir: String = {
@@ -14,7 +14,7 @@ public enum ServiceManager {
 
     private static let pidFileName: String = {
         let user = ProcessInfo.processInfo.environment["USER"] ?? "user"
-        return "/tmp/swiftkHD_\(user).pid"
+        return "/tmp/swiftkhd_\(user).pid"
     }()
 
     // MARK: - Plist generation
@@ -40,8 +40,9 @@ public enum ServiceManager {
     }
 
     private static var logPath: String {
-        let home = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
-        return "\(home)/Library/Logs/swiftkHD.log"
+        let home = FileManager.default.homeDirectoryForCurrentUser
+            .standardized.resolvingSymlinksInPath().path
+        return "\(home)/Library/Logs/swiftkhd.log"
     }
 
     private static func generatePlist(binaryPath: String) -> String {
@@ -92,18 +93,21 @@ public enum ServiceManager {
     // MARK: - Service operations
 
     public static func install() throws {
-        try FileManager.default.createDirectory(atPath: launchAgentsDir,
-                                                withIntermediateDirectories: true)
+        let fm = FileManager.default
+        try fm.createDirectory(atPath: launchAgentsDir, withIntermediateDirectories: true)
+        let log = logPath
+        try fm.createDirectory(atPath: (log as NSString).deletingLastPathComponent,
+                               withIntermediateDirectories: true)
         let bin = binaryPath()
         try generatePlist(binaryPath: bin).write(toFile: plistPath, atomically: true, encoding: .utf8)
         try launchctl(["bootstrap", gui, plistPath], ignoreFailure: true)
-        print("swiftkHD: service installed. Grant Accessibility in System Settings → Privacy & Security → Accessibility.")
+        print("swiftkhd: service installed. Grant Accessibility in System Settings → Privacy & Security → Accessibility.")
     }
 
     public static func uninstall() throws {
         try launchctl(["bootout", gui, plistPath], ignoreFailure: true)
         try? FileManager.default.removeItem(atPath: plistPath)
-        print("swiftkHD: service uninstalled.")
+        print("swiftkhd: service uninstalled.")
     }
 
     public static func start() throws {
@@ -125,7 +129,7 @@ public enum ServiceManager {
         try? proc.run()
         proc.waitUntilExit()
         if proc.terminationStatus != 0 {
-            print("swiftkHD: service not loaded. Run --install-service to install.")
+            print("swiftkhd: service not loaded. Run --install-service to install.")
         }
     }
 
@@ -181,7 +185,7 @@ public enum ServiceError: Error, CustomStringConvertible {
     public var description: String {
         switch self {
         case .notRunning:
-            return "swiftkHD does not appear to be running"
+            return "swiftkhd does not appear to be running"
         case .signalFailed:
             return "Failed to send reload signal"
         case .launchctlFailed(let cmd, let code):

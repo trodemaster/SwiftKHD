@@ -54,8 +54,8 @@ jobs:
           lipo -create \
             .build/arm64-apple-macosx/release/SwiftKHD \
             .build/x86_64-apple-macosx/release/SwiftKHD \
-            -output swiftkHD
-          lipo -info swiftkHD
+            -output swiftkhd
+          lipo -info swiftkhd
 
       - name: Build installer pkg
         run: |
@@ -63,13 +63,13 @@ jobs:
 
           # Stage binary at its install path
           mkdir -p payload/usr/local/bin
-          cp swiftkHD payload/usr/local/bin/swiftkHD
-          chmod +x payload/usr/local/bin/swiftkHD
+          cp swiftkhd payload/usr/local/bin/swiftkhd
+          chmod +x payload/usr/local/bin/swiftkhd
 
           # Build component pkg
           pkgbuild \
             --root payload \
-            --identifier com.netjibbing.SwiftKHD \
+            --identifier com.netjibbing.swiftkhd \
             --version "${VERSION#v}" \
             --install-location / \
             "SwiftKHD-${VERSION}.pkg"
