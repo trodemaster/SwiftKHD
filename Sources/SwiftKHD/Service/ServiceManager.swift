@@ -20,10 +20,31 @@ public enum ServiceManager {
     // MARK: - Plist generation
 
     private static func binaryPath() -> String {
-        (CommandLine.arguments[0] as NSString).standardizingPath
+        let arg0 = CommandLine.arguments[0]
+        // Already absolute
+        if arg0.hasPrefix("/") {
+            return (arg0 as NSString).standardizingPath
+        }
+        // Resolve bare name against PATH
+        let pathDirs = (ProcessInfo.processInfo.environment["PATH"] ?? "")
+            .split(separator: ":").map(String.init)
+        for dir in pathDirs {
+            let candidate = (dir as NSString).appendingPathComponent(arg0)
+            if FileManager.default.isExecutableFile(atPath: candidate) {
+                return (candidate as NSString).standardizingPath
+            }
+        }
+        // Fallback: resolve against current working directory
+        return (FileManager.default.currentDirectoryPath as NSString)
+            .appendingPathComponent(arg0)
     }
 
-    private static func generatePlist() -> String {
+    private static var logPath: String {
+        let home = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
+        return "\(home)/Library/Logs/swiftkHD.log"
+    }
+
+    private static func generatePlist(binaryPath: String) -> String {
         """
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -32,7 +53,7 @@ public enum ServiceManager {
             <key>Label</key>
             <string>\(label)</string>
             <key>Program</key>
-            <string>\(binaryPath())</string>
+            <string>\(binaryPath)</string>
             <key>RunAtLoad</key>
             <true/>
             <key>KeepAlive</key>
@@ -42,9 +63,9 @@ public enum ServiceManager {
             <key>ThrottleInterval</key>
             <integer>30</integer>
             <key>StandardOutPath</key>
-            <string>/tmp/swiftkHD.log</string>
+            <string>\(logPath)</string>
             <key>StandardErrorPath</key>
-            <string>/tmp/swiftkHD.log</string>
+            <string>\(logPath)</string>
         </dict>
         </plist>
         """
@@ -73,7 +94,8 @@ public enum ServiceManager {
     public static func install() throws {
         try FileManager.default.createDirectory(atPath: launchAgentsDir,
                                                 withIntermediateDirectories: true)
-        try generatePlist().write(toFile: plistPath, atomically: true, encoding: .utf8)
+        let bin = binaryPath()
+        try generatePlist(binaryPath: bin).write(toFile: plistPath, atomically: true, encoding: .utf8)
         try launchctl(["bootstrap", gui, plistPath], ignoreFailure: true)
         print("swiftkHD: service installed. Grant Accessibility in System Settings → Privacy & Security → Accessibility.")
     }
