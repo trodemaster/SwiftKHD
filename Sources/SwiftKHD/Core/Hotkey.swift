@@ -141,10 +141,10 @@ public enum ProcessCommand: Sendable {
 // MARK: - Hotkey
 
 public final class Hotkey: Sendable {
-    public var flags: ModifierFlag
-    public var key: UInt32
+    public nonisolated(unsafe) var flags: ModifierFlag
+    public nonisolated(unsafe) var key: UInt32
     // process name (lowercased) -> action; "*" is the wildcard
-    public var mappings: [(processName: String, action: ProcessCommand)]
+    public nonisolated(unsafe) var mappings: [(processName: String, action: ProcessCommand)]
 
     public init(flags: ModifierFlag = [], key: UInt32 = 0) {
         self.flags = flags

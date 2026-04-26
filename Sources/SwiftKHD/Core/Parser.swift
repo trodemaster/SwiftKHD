@@ -502,7 +502,7 @@ public final class Parser {
         let token = previous()
         let modeName = token.text
 
-        var newMode = Mode(name: modeName)
+        let newMode = Mode(name: modeName)
 
         if match(.capture) {
             newMode.capture = true

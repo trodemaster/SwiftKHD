@@ -226,7 +226,6 @@ public struct Tokenizer {
         }
     }
 
-    @discardableResult
     private mutating func skipUntil(_ target: UInt8) {
         while pos < buffer.count && buffer[pos] != target {
             advance()
