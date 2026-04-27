@@ -282,7 +282,7 @@ mute     : pactl set-sink-mute @DEFAULT_SINK@ toggle
 | `right`    | Right arrow             |
 | `up`       | Up arrow                |
 | `down`     | Down arrow              |
-| `f1`–`f20`| Function keys           |
+| `f1`–`f20`| Function keys [^fnkeys] |
 | `sound_up` | Volume Up               |
 | `sound_down`| Volume Down            |
 | `mute`     | Mute                   |
@@ -293,6 +293,8 @@ mute     : pactl set-sink-mute @DEFAULT_SINK@ toggle
 | `fast`     | Fast forward            |
 | `brightness_up` | Brightness Up      |
 | `brightness_down`| Brightness Down   |
+
+[^fnkeys]: By default macOS maps F-keys to system functions (brightness, volume, etc.). To bind `f1`–`f20` directly, enable **System Settings → Keyboard → "Use F1, F2, etc. keys as standard function keys"**, or use the `fn` modifier in your binding (e.g. `fn - f1 : open -a Safari`).
 
 ---
 

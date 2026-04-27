@@ -62,14 +62,24 @@ destroot {
     # CLI symlink in /opt/local/bin
     xinstall -d ${destroot}${prefix}/bin
     ln -sf /Applications/SwiftKHD.app/Contents/MacOS/SwiftKHD \
-        ${destroot}${prefix}/bin/swiftkHD
+        ${destroot}${prefix}/bin/swiftkhd
+
+    # Man page
+    xinstall -d ${destroot}${prefix}/share/man/man1
+    xinstall -m 0644 ${worksrcpath}/man/swiftkhd.1 \
+        ${destroot}${prefix}/share/man/man1/swiftkhd.1
+
+    # Bash completion
+    xinstall -d ${destroot}${prefix}/etc/bash_completion.d
+    xinstall -m 0644 ${worksrcpath}/completions/swiftkhd.bash \
+        ${destroot}${prefix}/etc/bash_completion.d/swiftkhd
 }
 
 notes "
 To get started:
 
 1. Install the launchd service:
-   swiftkHD --install-service
+   swiftkhd --install-service
 
 2. Grant accessibility permissions:
    System Settings → Privacy & Security → Accessibility → add SwiftKHD
@@ -77,8 +87,8 @@ To get started:
 3. Create your config at ~/.config/skhd/skhdrc (same format as skhd)
 
 To reload config while running:
-   swiftkHD --reload
+   swiftkhd --reload
 
 To check service status:
-   swiftkHD --status
+   swiftkhd --status
 "

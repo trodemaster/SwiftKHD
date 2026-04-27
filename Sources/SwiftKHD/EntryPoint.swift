@@ -5,7 +5,13 @@ struct SwiftKHD: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "swiftkhd",
         abstract: "Simple Hotkey Daemon for macOS (Swift port of skhd)",
-        version: "0.1.0"
+        discussion: """
+        NOTE: By default macOS maps F1-F20 to system functions (brightness, volume, etc.).
+        To bind function keys directly, enable System Settings → Keyboard →
+        "Use F1, F2, etc. keys as standard function keys", or prefix the key
+        with the fn modifier (e.g. fn - f1).
+        """,
+        version: "0.1.5"
     )
 
     // MARK: - Arguments
@@ -114,17 +120,26 @@ struct SwiftKHD: ParsableCommand {
         for path in candidates {
             if FileManager.default.fileExists(atPath: path) { return path }
         }
-        throw ConfigError.notFound(candidates)
+
+        return try promptCreateDefaultConfig(home: home, xdgHome: xdgHome, searched: candidates)
     }
-}
 
-enum ConfigError: Error, CustomStringConvertible {
-    case notFound([String])
+    private func promptCreateDefaultConfig(home: String, xdgHome: String, searched: [String]) throws -> String {
+        fputs("swiftkhd: No config file found. Searched:\n", stderr)
+        for path in searched { fputs("  \(path)\n", stderr) }
+        fputs("\nCreate default config at \(xdgHome)/skhd/skhdrc? [y/N] ", stderr)
 
-    var description: String {
-        switch self {
-        case .notFound(let paths):
-            return "No config file found. Searched:\n" + paths.map { "  \($0)" }.joined(separator: "\n")
+        guard let answer = readLine(strippingNewline: true),
+              answer.lowercased() == "y" else {
+            fputs("Cancelled. Use --config to specify a file.\n", stderr)
+            throw ExitCode.success
         }
+
+        let configDir = "\(xdgHome)/skhd"
+        let configPath = "\(configDir)/skhdrc"
+        try FileManager.default.createDirectory(atPath: configDir, withIntermediateDirectories: true)
+        try defaultConfigContent.write(toFile: configPath, atomically: true, encoding: .utf8)
+        fputs("Created \(configPath)\n\n", stderr)
+        return configPath
     }
 }

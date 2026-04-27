@@ -1,0 +1,174 @@
+.TH SWIFTKHD 1 "April 2026" "SwiftKHD 0.1.0" "User Commands"
+.SH NAME
+swiftkhd \- Simple Hotkey Daemon for macOS
+.SH SYNOPSIS
+.B swiftkhd
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B swiftkhd
+is a simple hotkey daemon for macOS, written in Swift.
+It is a compatible port of
+.BR skhd (1),
+sharing the same configuration file format and supporting modal hotkeys,
+process-specific bindings, key forwarding, and media key intercept.
+.PP
+Service management uses the native SMAppService API (macOS 13+).
+The daemon runs in the background and monitors a configuration file,
+applying key bindings while optionally hot-reloading changes.
+.SH OPTIONS
+.TP
+.BI \-c " file" ", --config " file
+Use \fIfile\fR as the configuration file instead of the default search path.
+.TP
+.B \-V , --verbose
+Enable verbose logging.
+.TP
+.B \-h , --no-hotload
+Disable automatic config reload when the file changes on disk.
+.TP
+.B \-o , --observe
+Observe mode: print raw keyboard events to stdout without applying any bindings.
+Useful for discovering key names and modifiers to use in a config file.
+Press Ctrl-C to exit.
+.TP
+.B \-P , --profile
+Enable profiling and tracing output.
+.TP
+.BI \-k " keyspec" ", --key " keyspec
+Synthesize a keypress described by \fIkeyspec\fR (e.g.\& \fBcmd\ \-\ a\fR) and exit.
+Does not start the daemon.
+.TP
+.BI \-t " text" ", --text " text
+Synthesize keyboard input of \fItext\fR and exit.
+Does not start the daemon.
+.TP
+.B \-r , --reload
+Send a reload signal to the running swiftkhd instance.
+.TP
+.B --install-service
+Register swiftkhd as a launchd login item using SMAppService.
+.TP
+.B --uninstall-service
+Unregister the launchd service.
+.TP
+.B --start-service
+Start the launchd service.
+.TP
+.B --stop-service
+Stop the launchd service.
+.TP
+.B --restart-service
+Restart the launchd service.
+.TP
+.B --status
+Print the current launchd service status.
+.TP
+.B --version
+Print the version number and exit.
+.SH FILES
+When no
+.B \-\-config
+is given, swiftkhd searches for a configuration file in the following order:
+.PP
+.RS
+.PD 0
+.TP
+1.
+.I $XDG_CONFIG_HOME/skhd/skhdrc
+.TP
+2.
+.I ~/.config/skhd/skhdrc
+.TP
+3.
+.I ~/.skhdrc
+.TP
+4.
+.I ./skhdrc
+(current directory)
+.PD
+.RE
+.PP
+If no file is found, swiftkhd prompts to create a default config at
+.IR ~/.config/skhd/skhdrc .
+.SH CONFIGURATION
+Bindings follow the format:
+.PP
+.RS
+[\fImodifier\fR +] [\fImodifier\fR] \fB\-\fR \fIkey\fR \fB:\fR \fIcommand\fR
+.RE
+.PP
+Modifiers: \fBcmd\fR, \fBalt\fR, \fBshift\fR, \fBctrl\fR, \fBfn\fR.
+Keys are named identifiers such as
+.BR return ", " space ", " a \- z ", " 0 \- 9 ", " f1 \- f20 .
+.PP
+Media and system keys (\fBplay\fR, \fBnext\fR, \fBprevious\fR, \fBmute\fR,
+\fBsound_up\fR, \fBsound_down\fR, \fBrewind\fR, \fBfast\fR) do not require
+modifiers and are written directly as the key name.
+.PP
+Use
+.B \-\-observe
+to print key names for any key you press.
+.SH EXAMPLES
+Start the daemon using the default config:
+.PP
+.RS
+.B swiftkhd
+.RE
+.PP
+Start with a specific config file:
+.PP
+.RS
+.B swiftkhd \-c ~/.config/skhd/skhdrc
+.RE
+.PP
+Discover key names interactively:
+.PP
+.RS
+.B swiftkhd \-\-observe
+.RE
+.PP
+Synthesize a keypress from the command line:
+.PP
+.RS
+.B swiftkhd \-k 'cmd \- a'
+.RE
+.PP
+Install and start the background service:
+.PP
+.RS
+.nf
+.B swiftkhd \-\-install-service
+.B swiftkhd \-\-start-service
+.fi
+.RE
+.PP
+Reload config after editing:
+.PP
+.RS
+.B swiftkhd \-\-reload
+.RE
+.SH NOTES
+.SS Function keys and macOS settings
+By default, macOS maps the F1\(enF20 keys to system functions such as
+brightness and volume control.
+To bind
+.BR f1 \(en f20
+directly in a swiftkhd config, enable
+.B System Settings \(-> Keyboard \(-> \[lq]Use F1, F2, etc. keys as standard function keys\[rq]
+.PP
+Alternatively, use the
+.B fn
+modifier in the binding to target the raw function key regardless of
+the system setting:
+.PP
+.RS
+.EX
+fn - f1 : open -a Safari
+.EE
+.RE
+.SH SEE ALSO
+.BR skhd (1)
+.PP
+Project home: https://github.com/blakegarner/SwiftKHD
+.SH AUTHORS
+Blake Garner.

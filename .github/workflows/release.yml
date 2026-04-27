@@ -61,10 +61,18 @@ jobs:
         run: |
           VERSION=${{ steps.version.outputs.version }}
 
-          # Stage binary at its install path
+          # Stage binary
           mkdir -p payload/usr/local/bin
           cp swiftkhd payload/usr/local/bin/swiftkhd
           chmod +x payload/usr/local/bin/swiftkhd
+
+          # Man page
+          mkdir -p payload/usr/local/share/man/man1
+          cp man/swiftkhd.1 payload/usr/local/share/man/man1/swiftkhd.1
+
+          # Bash completion
+          mkdir -p payload/etc/bash_completion.d
+          cp completions/swiftkhd.bash payload/etc/bash_completion.d/swiftkhd
 
           # Build component pkg
           pkgbuild \
