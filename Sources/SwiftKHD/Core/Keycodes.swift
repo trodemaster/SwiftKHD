@@ -26,8 +26,15 @@ public let literalKeycodeStr: [String] = [
 ]
 
 // Indices matching Keycodes.zig constants
-public let keyHasImplicitFnMod = 4   // keys with index > 4 and < 35 get .fn_ flag
+public let keyHasImplicitFnMod = 4   // keys with index > 4 and <= keyFnModEnd get .fn_ flag
+public let keyFnModEnd = 27          // F12 is the last key with implicit fn_ (F13+ are pure function keys)
 public let keyHasImplicitNxMod = 35  // keys with index >= 35 get .nx flag
+
+// Keycodes for F13-F19: macOS may or may not set maskSecondaryFn for these keys
+// depending on keyboard hardware; strip fn_ from events for these to ensure consistent matching.
+public let pureFunctionKeycodes: Set<UInt32> = Set(
+    literalKeycodeValue[(keyFnModEnd + 1) ..< keyHasImplicitNxMod]
+)
 
 // NX key type constants (from IOKit/hidsystem/ev_keymap.h)
 private let NX_KEYTYPE_SOUND_UP:          UInt32 = 0

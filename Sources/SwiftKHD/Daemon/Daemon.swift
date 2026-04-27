@@ -71,7 +71,8 @@ public final class Daemon {
             | (1 << nxSysDefinedType.rawValue)
 
         try eventTap.start(mask: mask) { [weak self] proxy, type, event in
-            self?.handleEvent(proxy: proxy, type: type, event: event) ?? event
+            guard let self else { return event }
+            return self.handleEvent(proxy: proxy, type: type, event: event)
         }
 
         fputs("swiftkhd: event tap created. Running.\n", stdout)
@@ -116,7 +117,10 @@ public final class Daemon {
         }
 
         let keycode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
-        let flags = cgEventFlagsToModifierFlag(event.flags)
+        var flags = cgEventFlagsToModifierFlag(event.flags)
+        // F13-F19 are pure function keys with no fn-layer alternate; hardware may or may not
+        // set maskSecondaryFn for them, so strip fn_ to get consistent matching against config.
+        if pureFunctionKeycodes.contains(keycode) { flags.remove(.fn_) }
         let kp = KeyPress(flags: flags, key: keycode)
         return handleHotkeyResult(processHotkey(kp, event: event, processName: processName), event: event, kp: kp)
     }

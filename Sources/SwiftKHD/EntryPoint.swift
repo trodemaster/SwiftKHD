@@ -11,7 +11,7 @@ struct SwiftKHD: ParsableCommand {
         "Use F1, F2, etc. keys as standard function keys", or prefix the key
         with the fn modifier (e.g. fn - f1).
         """,
-        version: "0.1.5"
+        version: "0.1.6"
     )
 
     // MARK: - Arguments
@@ -22,7 +22,7 @@ struct SwiftKHD: ParsableCommand {
     @Flag(name: [.customShort("V"), .long], help: "Enable verbose logging")
     var verbose: Bool = false
 
-    @Flag(name: [.customLong("no-hotload"), .customShort("h")], help: "Disable config hot reload")
+    @Flag(name: .customLong("no-hotload"), help: "Disable config hot reload")
     var noHotload: Bool = false
 
     @Flag(name: [.customShort("o"), .long], help: "Observe mode: print raw keyboard events")

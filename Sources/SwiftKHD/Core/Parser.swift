@@ -293,7 +293,7 @@ public final class Parser {
         for (i, literal) in literalKeycodeStr.enumerated() {
             if token.text == literal {
                 var flags: ModifierFlag = []
-                if i > keyHasImplicitFnMod && i < keyHasImplicitNxMod {
+                if i > keyHasImplicitFnMod && i <= keyFnModEnd {
                     flags = .fn_
                 } else if i >= keyHasImplicitNxMod {
                     flags = .nx
