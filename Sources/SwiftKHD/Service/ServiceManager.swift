@@ -46,7 +46,8 @@ public enum ServiceManager {
     }
 
     private static func generatePlist(binaryPath: String) -> String {
-        """
+        let path = ProcessInfo.processInfo.environment["PATH"] ?? "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        return """
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0">
@@ -55,6 +56,11 @@ public enum ServiceManager {
             <string>\(label)</string>
             <key>Program</key>
             <string>\(binaryPath)</string>
+            <key>EnvironmentVariables</key>
+            <dict>
+                <key>PATH</key>
+                <string>\(path)</string>
+            </dict>
             <key>RunAtLoad</key>
             <true/>
             <key>KeepAlive</key>
