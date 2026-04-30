@@ -11,7 +11,7 @@ struct SwiftKHD: ParsableCommand {
         "Use F1, F2, etc. keys as standard function keys", or prefix the key
         with the fn modifier (e.g. fn - f1).
         """,
-        version: "0.1.6"
+        version: "0.1.7"
     )
 
     // MARK: - Arguments
