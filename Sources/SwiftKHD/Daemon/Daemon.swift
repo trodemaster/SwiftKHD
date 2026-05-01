@@ -75,7 +75,7 @@ public final class Daemon {
             return self.handleEvent(proxy: proxy, type: type, event: event)
         }
 
-        fputs("swiftkhd: event tap created. Running.\n", stdout)
+        fputs("swiftkhd: event tap created. Running.\n", stderr)
         CFRunLoopRun()
         tracer.printSummary()
     }
@@ -248,7 +248,7 @@ public final class Daemon {
             if mappings.modeMap["default"] != nil {
                 currentModeName = "default"
             }
-            fputs("swiftkhd: configuration reloaded.\n", stdout)
+            fputs("swiftkhd: configuration reloaded.\n", stderr)
         } catch {
             fputs("swiftkhd: reload failed: \(error)\n", stderr)
         }
