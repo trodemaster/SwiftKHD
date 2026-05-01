@@ -11,7 +11,7 @@ struct SwiftKHD: ParsableCommand {
         "Use F1, F2, etc. keys as standard function keys", or prefix the key
         with the fn modifier (e.g. fn - f1).
         """,
-        version: "0.1.7"
+        version: "0.1.8"
     )
 
     // MARK: - Arguments
@@ -87,11 +87,14 @@ struct SwiftKHD: ParsableCommand {
 
         // Check accessibility
         if !ServiceManager.hasAccessibilityPermissions() {
-            fputs("""
-            swiftkhd: Accessibility permissions required.
-            Open System Settings → Privacy & Security → Accessibility and add this binary.
-            \n
-            """, stderr)
+            if ServiceManager.isRunningInteractively() {
+                fputs("swiftkhd: Requesting accessibility permissions...\n", stderr)
+                ServiceManager.requestAccessibilityPermissions()
+                fputs("swiftkhd: Grant access in the dialog, then run swiftkhd again.\n", stderr)
+                throw ExitCode.success
+            } else {
+                fputs("swiftkhd: Accessibility permissions required.\nRun swiftkhd from Terminal to request permissions.\n", stderr)
+            }
         }
 
         // Write PID file

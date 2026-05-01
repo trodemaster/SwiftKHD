@@ -107,7 +107,12 @@ public enum ServiceManager {
         let bin = binaryPath()
         try generatePlist(binaryPath: bin).write(toFile: plistPath, atomically: true, encoding: .utf8)
         try launchctl(["bootstrap", gui, plistPath], ignoreFailure: true)
-        print("swiftkhd: service installed. Grant Accessibility in System Settings → Privacy & Security → Accessibility.")
+        print("swiftkhd: service installed.")
+        if !hasAccessibilityPermissions() {
+            print("swiftkhd: Requesting accessibility permissions...")
+            requestAccessibilityPermissions()
+            print("swiftkhd: Grant access in the dialog that appeared, then restart the service with --restart-service.")
+        }
     }
 
     public static func uninstall() throws {
@@ -180,6 +185,18 @@ public enum ServiceManager {
 
     public static func hasAccessibilityPermissions() -> Bool {
         AXIsProcessTrusted()
+    }
+
+    /// Requests accessibility permissions, showing the system dialog.
+    /// Only works when called from a foreground process with a TTY.
+    @discardableResult
+    public static func requestAccessibilityPermissions() -> Bool {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
+        return AXIsProcessTrustedWithOptions(options)
+    }
+
+    public static func isRunningInteractively() -> Bool {
+        isatty(STDIN_FILENO) != 0
     }
 }
 
