@@ -27,6 +27,7 @@ let package = Package(
                 .linkedFramework("CoreServices"),
                 .linkedFramework("AppKit"),
                 .linkedFramework("ApplicationServices"),
+                .linkedFramework("Security"),
             ]
         ),
         .testTarget(
