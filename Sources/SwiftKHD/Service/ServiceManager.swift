@@ -1,4 +1,5 @@
 import ApplicationServices
+import CoreGraphics
 import Foundation
 import Darwin
 import Security
@@ -13,10 +14,13 @@ public enum ServiceManager {
     }()
     private static var plistPath: String { "\(launchAgentsDir)/\(plistName)" }
 
-    private static let pidFileName: String = {
-        let user = ProcessInfo.processInfo.environment["USER"] ?? "user"
-        return "/tmp/swiftkhd_\(user).pid"
+    // When running under sudo, USER becomes "root"; use SUDO_USER to find the real user.
+    private static let effectiveUser: String = {
+        let env = ProcessInfo.processInfo.environment
+        return env["SUDO_USER"] ?? env["USER"] ?? env["LOGNAME"] ?? "user"
     }()
+
+    private static let pidFileName: String = "/tmp/swiftkhd_\(effectiveUser).pid"
 
     // MARK: - Plist generation
 
@@ -156,6 +160,16 @@ public enum ServiceManager {
         let trusted = AXIsProcessTrusted()
         print("  AXIsProcessTrusted:   \(trusted ? "yes" : "no")")
 
+        // Definitive test: actually try to create a listen-only event tap
+        let tapOK = canCreateEventTap()
+        if tapOK {
+            print("  Event tap test:       ok — accessibility is fully working")
+        } else {
+            print("  Event tap test:       FAILED — accessibility is not working despite AXIsProcessTrusted")
+            print("    fix: System Settings > Privacy & Security > Accessibility")
+            print("         Remove SwiftKHD, re-add it, then: swiftkhd --restart-service")
+        }
+
         // CDHash of the installed binary
         let binPath = binaryPath()
         let binHash = cdHash(ofPath: binPath)
@@ -182,7 +196,7 @@ public enum ServiceManager {
         print("  TCC entry:")
         switch readTCCEntry(binaryPath: binPath) {
         case .noAccess:
-            print("    cannot read TCC database (try: sudo swiftkhd --status)")
+            print("    cannot read TCC database (system DB is SIP-protected)")
         case .notFound:
             print("    not found — accessibility has never been granted for this binary")
         case .found(let client, let auth, let tccHash):
@@ -204,6 +218,23 @@ public enum ServiceManager {
                 print("    CDHash:  (could not parse from stored requirement)")
             }
         }
+    }
+
+    private static func canCreateEventTap() -> Bool {
+        let mask: CGEventMask = 1 << CGEventType.keyDown.rawValue
+        let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .listenOnly,
+            eventsOfInterest: mask,
+            callback: { _, _, event, _ in Unmanaged.passRetained(event) },
+            userInfo: nil
+        )
+        if let tap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            return true
+        }
+        return false
     }
 
     private enum TCCResult {
@@ -237,8 +268,18 @@ public enum ServiceManager {
         return unique.map { String(format: "%02x", $0) }.joined()
     }
 
+    // Home directory of the real user (handles sudo correctly)
+    private static var realUserHome: String {
+        let env = ProcessInfo.processInfo.environment
+        if let sudoUser = env["SUDO_USER"],
+           let pw = getpwnam(sudoUser), let dir = pw.pointee.pw_dir {
+            return String(cString: dir)
+        }
+        return env["HOME"] ?? NSHomeDirectory()
+    }
+
     private static func readTCCEntry(binaryPath: String) -> TCCResult {
-        let home = NSHomeDirectory()
+        let home = realUserHome
         let dbs = [
             "/Library/Application Support/com.apple.TCC/TCC.db",
             "\(home)/Library/Application Support/com.apple.TCC/TCC.db",
