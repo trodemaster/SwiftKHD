@@ -9,6 +9,10 @@ public enum EventTapError: Error {
 /// Wraps CGEventTap for capturing keyboard events.
 public final class EventTap {
     public typealias Handler = (CGEventTapProxy, CGEventType, CGEvent) -> CGEvent?
+    /// Called when macOS disables the tap. `timedOut` is true for a timeout disable,
+    /// false when accessibility was revoked. The tap has already been re-enabled if
+    /// `timedOut` is true; for revocation the tap stays disabled.
+    public var onDisabled: ((_ timedOut: Bool) -> Void)?
 
     private var tapPort: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -18,7 +22,7 @@ public final class EventTap {
     deinit { stop() }
 
     public func start(mask: CGEventMask, handler: @escaping Handler) throws {
-        let handlerBox = HandlerBox(handler: handler)
+        let handlerBox = HandlerBox(handler: handler, onDisabled: onDisabled)
         let userInfo = Unmanaged.passRetained(handlerBox).toOpaque()
 
         let tap = CGEvent.tapCreate(
@@ -102,16 +106,27 @@ public func cgEventFlagsToModifierFlag(_ eventFlags: CGEventFlags) -> ModifierFl
 
 private final class HandlerBox {
     let handler: EventTap.Handler
+    let onDisabled: ((_ timedOut: Bool) -> Void)?
     var tap: CFMachPort?
-    init(handler: @escaping EventTap.Handler) { self.handler = handler }
+    init(handler: @escaping EventTap.Handler, onDisabled: ((_ timedOut: Bool) -> Void)?) {
+        self.handler = handler
+        self.onDisabled = onDisabled
+    }
 }
 
 private let eventTapCallback: CGEventTapCallBack = { proxy, type, event, userInfo -> Unmanaged<CGEvent>? in
     guard let userInfo else { return Unmanaged.passRetained(event) }
     let box = Unmanaged<HandlerBox>.fromOpaque(userInfo).takeUnretainedValue()
 
-    if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+    if type == .tapDisabledByTimeout {
         if let tap = box.tap { CGEvent.tapEnable(tap: tap, enable: true) }
+        box.onDisabled?(true)
+        return Unmanaged.passRetained(event)
+    }
+
+    if type == .tapDisabledByUserInput {
+        // Accessibility was revoked — re-enable will not succeed; notify caller to exit.
+        box.onDisabled?(false)
         return Unmanaged.passRetained(event)
     }
 

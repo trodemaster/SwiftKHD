@@ -70,6 +70,15 @@ public final class Daemon {
         let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
             | (1 << nxSysDefinedType.rawValue)
 
+        eventTap.onDisabled = { timedOut in
+            if timedOut {
+                fputs("swiftkhd: event tap disabled by timeout, re-enabled.\n", stderr)
+            } else {
+                fputs("swiftkhd: event tap disabled (accessibility permission revoked), exiting.\n", stderr)
+                CFRunLoopStop(CFRunLoopGetMain())
+            }
+        }
+
         try eventTap.start(mask: mask) { [weak self] proxy, type, event in
             guard let self else { return event }
             return self.handleEvent(proxy: proxy, type: type, event: event)
@@ -85,8 +94,6 @@ public final class Daemon {
     private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> CGEvent? {
         tracer.traceKeyEvent()
         switch type {
-        case .tapDisabledByTimeout, .tapDisabledByUserInput:
-            return event
         case .keyDown:
             tracer.traceKeyDown()
             return handleKeyDown(event: event)

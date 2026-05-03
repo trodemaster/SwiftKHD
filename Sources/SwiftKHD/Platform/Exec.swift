@@ -39,7 +39,10 @@ public func forkAndExec(shell: String, command: String, verbose: Bool) {
         }
 
         if !captured.isEmpty, let text = String(data: captured, encoding: .utf8) {
-            fputs(text.hasSuffix("\n") ? text : text + "\n", stderr)
+            let trimmed = text.hasSuffix("\n") ? String(text.dropLast()) : text
+            for line in trimmed.split(separator: "\n", omittingEmptySubsequences: false) {
+                fputs("  \(line)\n", stderr)
+            }
         }
     }
 }
